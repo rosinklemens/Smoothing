@@ -3,7 +3,7 @@
 #
 #
 #
-#rok/bad, November 2021
+#Klemens Rosin, 2021-11-23
 #-------------------------------------------------------------------
 
 
@@ -44,7 +44,7 @@
             summarize(nat = sum(AnzEinbWir)) %>% 
         ungroup()
     
-#all values
+#all values (since missing values for certain ages in the data)
     nat_all <- tibble(age = 0:110) %>% 
         left_join(nat, by = "age") %>% 
         replace_na(list(nat = 0))
@@ -56,10 +56,11 @@
     
 #different smoothing approaches
     nat_smooth <- nat_all %>% 
-        mutate(pred_loess_span10 = predict(loess(nat ~ age, span = 0.1, degree = 1)),
-               pred_loess_span30 = predict(loess(nat ~ age, span = 0.3, degree = 1)),
+        mutate(pred_ma05 = rollmean(nat, k = 5, fill = NA),
+               pred_ma11 = rollmean(nat, k = 11, fill = NA),
                pred_gam = gam(nat ~ s(age, bs = "tp"))$fitted.values,
-               pred_ma = rollmean(nat, k = 5, fill = NA))
+               pred_loess10 = predict(loess(nat ~ age, span = 0.1, degree = 1)),
+               pred_loess30 = predict(loess(nat ~ age, span = 0.3, degree = 1)))
     
 #plot preparation
     nat_prep <- nat_smooth %>% 
@@ -71,11 +72,12 @@
     
 #plot
     ggplot(data = nat_prep) +
-        geom_line(aes(x = age, y = values, color = category), size = 0.7) +
-        facet_wrap(~method, nrow = 1) +
+    # ggplot(filter(nat_prep, method %in% c("loess10", "loess30"))) +        
+        geom_line(aes(x = age, y = values, color = category), size = 1) +
+        facet_wrap(~method, ncol = 2) +
         scale_color_manual(values = c("grey75", "orange")) +
         labs(x = "age", y = "naturalizations per year", color = "") +
         neutral      
     
-   
+ 
     
